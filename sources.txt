@@ -1,0 +1,6 @@
+
+https://www.alanzucconi.com/2018/03/14/understanding-the-technology-behind-deepfakes/
+
+https://github.com/shantnu/FaceDetect
+
+https://blog.keras.io/building-autoencoders-in-keras.html
