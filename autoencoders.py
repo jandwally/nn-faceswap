@@ -40,12 +40,13 @@ def new_autoencoder(x_train, x_test):
 
 	# Input
 	shape = x_train.shape[1:-1]
-
-	print(x_train.shape)
+	print("shape", shape)
 	input_image = Input(shape=shape)
+	input_img = Input(shape=(96, 96, 3))  # adapt this if using `channels_first` image data format
 
+	print(input_image)
 	# Encoder
-	x = Conv2D(16, (3, 3), activation='relu', padding='same')(input_image)
+	x = Conv2D(16, (3, 3), activation='relu', padding='same')(input_img)
 	# x = MaxPooling2D((2, 2), padding='same')(x)
 	# x = Conv2D(8, (3, 3), activation='relu', padding='same')(x)
 	x = MaxPooling2D((2, 2), padding='same')(x)
@@ -66,12 +67,12 @@ def new_autoencoder(x_train, x_test):
 	print("decoded shape:", decoded.shape)
 
 	# Make autoencoder
-	autoencoder = Model(inputs=[input_image], outputs=[decoded])
+	autoencoder = Model(inputs=[input_img], outputs=[decoded])
 
 	# Encoded representation
 	s = x_train.shape[1] / 4
 	encoding_dim = (s, s, 8)
-	encoder = Model(inputs=[input_image], outputs=[encoded])
+	encoder = Model(inputs=[input_img], outputs=[encoded])
 
 	print(len(encoder.layers))
 	print(len(autoencoder.layers))
@@ -89,4 +90,12 @@ def new_autoencoder(x_train, x_test):
 
 	return autoencoder, encoder, decoder
 
-auto2, encoder2, decoder2 = new_autoencoder(source3,target3)
+auto2, encoder2, decoder2 = new_autoencoder(source3,source3)
+with open('auto_encoder2.pkl', 'wb') as f:
+	pickle.dump(auto2, f, True)
+
+with open('encoder2.pkl', 'wb') as f:
+	pickle.dump(encoder2, f, True)
+
+with open('decoder2.pkl', 'wb') as f:
+	pickle.dump(decoder2, f, True)
