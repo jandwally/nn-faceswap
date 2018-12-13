@@ -13,14 +13,23 @@ import pickle
 EPOCHS = 200
 BATCH_SIZE = 128
 
+source = pickle.load(open("source_faces.p", "rb"))
+target = pickle.load(open("replacement_faces.p", "rb"))
+temp = np.empty((len(source),))
 
+source2=np.array([np.array(xi) for xi in source])
+target2=np.array([np.array(xi) for xi in target])
+source2 = np.array(source2.astype(float))
+print(type(source2))
+source2.reshape((len(source),346, 346, 3))
+print(source2[0].shape)
 ''' a simple autoencoder '''
 def new_autoencoder(x_train, x_test):
 
 	# Input
-	shape = x_train.shape[1:]
+	shape = x_train.shape[1:-1]
+
 	print(x_train.shape)
-	print(shape)
 	input_image = Input(shape=shape)
 
 	# Encoder
@@ -67,3 +76,5 @@ def new_autoencoder(x_train, x_test):
 	autoencoder.fit(x_train, x_train, epochs=EPOCHS, batch_size=BATCH_SIZE, shuffle=True, validation_data=(x_test, x_test))
 
 	return autoencoder, encoder, decoder
+
+auto2, encoder2, decoder2 = new_autoencoder(source,target)

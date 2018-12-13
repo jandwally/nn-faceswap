@@ -7,10 +7,15 @@ from keras.datasets import mnist
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
+from sklearn.model_selection import train_test_split
+
 
 ''' a simple autoencoder '''
 def new_autoencoder(x_train, x_test):
+	
+	train_data = pickle.load(open("source_faces.p", "rb"))
 
+	x_train,x_valid,train_ground,valid_ground = train_test_split(train_data,train_data, test_size=0.2, random_state=13)
 	# Input
 	shape = x_train.shape[1:-1]
 	input_image = Input(shape=shape)
@@ -36,7 +41,7 @@ def new_autoencoder(x_train, x_test):
 	autoencoder = Model(input_image, decoded)
 	autoencoder.compile(optimizer='adadelta', loss='binary_crossentropy')
 	autoencoder.fit(x_train, x_train,
-		epochs=10, batch_size=128, shuffle=True, validation_data=(x_test, x_test))
+		epochs=1, batch_size=128, shuffle=True, validation_data=(x_test, x_test))
 
 	return autoencoder
 
@@ -46,6 +51,14 @@ def mnist_test():
 
 	# Training data
 	(x_train, _), (x_test, _) = mnist.load_data()
+	print("x_train shape", x_train.shape)
+
+	train_data = pickle.load(open("source_faces.p", "rb"))
+
+	x_train2,x_test2,train_ground,valid_ground = train_test_split(train_data,train_data, test_size=0.2, random_state=13)
+	# Input
+	x_train2 = np.array(x_train2)
+	print("x_train2 shape" , x_train2.shape)
 
 	# Adding an extra channel dimension, convert to floats
 	x_train = np.expand_dims(x_train, 3).astype('float32') / 255.0
@@ -56,12 +69,12 @@ def mnist_test():
 	#autoenc = new_autoencoder(x_train, x_test)
 	#pickle.dump(autoenc, open("autoenc.p", "wb"))
 	autoenc = pickle.load(open("autoenc.p", "rb"))
-
+	print("1")
 	# Predict on the first ten
 	n = 10
 	samples = x_train[0:n]
 	predicted = autoenc.predict(samples)
-
+	print("hi")
 	#print(samples[0])
 	#print(predicted[0])
 
@@ -73,7 +86,6 @@ def mnist_test():
 	    plt.gray()
 	    ax.get_xaxis().set_visible(False)
 	    ax.get_yaxis().set_visible(False)
-
 	    # display reconstruction
 	    ax = plt.subplot(2, n, i + n + 1)
 	    plt.imshow(predicted[i].reshape(28, 28))
@@ -86,6 +98,6 @@ def mnist_test():
 
 
 
-
+mnist_test()
 
 
