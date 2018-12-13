@@ -4,8 +4,8 @@ import numpy as np
 import pickle
 
 from face_detection import *
-from autoencoders import *
-
+#from autoencoders import *
+import pickle
 
 def swap():
 
@@ -45,6 +45,9 @@ def swap():
 	for f in range(num_src_face):
 		curr_face = cv2.resize(source_faces[f], (s, s))
 		source_array[f,:,:,:] = curr_face.astype('float32') / 255.0
+	
+	with open("new_source.p", "wb") as f:
+    	 pickle.dump(source_array, f)
 
 	target_array = np.zeros((num_tgt_face, s, s, 3)).astype('float32')
 	for f in range(num_tgt_face):

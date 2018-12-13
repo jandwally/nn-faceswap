@@ -3,7 +3,7 @@ from keras.models import Model
 from keras import backend as K
 
 from keras.datasets import mnist
-
+import cv2
 import numpy as np
 import matplotlib.pyplot as plt
 import pickle
@@ -15,14 +15,22 @@ BATCH_SIZE = 128
 
 source = pickle.load(open("source_faces.p", "rb"))
 target = pickle.load(open("replacement_faces.p", "rb"))
-temp = np.empty((len(source),))
-
 source2=np.array([np.array(xi) for xi in source])
 target2=np.array([np.array(xi) for xi in target])
-source2 = np.array(source2.astype(float))
-print(type(source2))
-source2.reshape((len(source),346, 346, 3))
-print(source2[0].shape)
+source2 = np.asarray(source2)
+
+s = 96
+source3 = []
+target3 = [] 
+
+for elem in source2:
+	curr_face = cv2.resize(elem, (s, s))
+	source3.append(curr_face)
+
+for elem in target2:
+	curr_face = cv2.resize(elem, (s, s))
+	target3.append(curr_face)
+
 ''' a simple autoencoder '''
 def new_autoencoder(x_train, x_test):
 
@@ -77,4 +85,4 @@ def new_autoencoder(x_train, x_test):
 
 	return autoencoder, encoder, decoder
 
-auto2, encoder2, decoder2 = new_autoencoder(source,target)
+auto2, encoder2, decoder2 = new_autoencoder(source3,target3)
