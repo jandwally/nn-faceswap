@@ -31,6 +31,10 @@ for elem in target2:
 	curr_face = cv2.resize(elem, (s, s))
 	target3.append(curr_face)
 
+source3 = np.asarray(source3)
+print("source", source3.shape)
+target3 = np.asarray(target3)
+print("target", target3.shape)
 ''' a simple autoencoder '''
 def new_autoencoder(x_train, x_test):
 
