@@ -45,7 +45,7 @@ def swap():
 	for f in range(num_src_face):
 		curr_face = cv2.resize(source_faces[f], (s, s))
 		source_array[f,:,:,:] = curr_face.astype('float32') / 255.0
-	
+
 	with open("new_source.p", "wb") as f:
     	 pickle.dump(source_array, f)
 
@@ -56,6 +56,7 @@ def swap():
 
 	# Train autoencoders on the source and replacement faces
 
+	'''
 	part = np.random.permutation(np.arange(0, source_array.shape[0]))
 
 	source_array = source_array[part]
@@ -73,6 +74,13 @@ def swap():
 	#pickle.dump(tgt_autoencoder_data, open("tgt_autoencoder_data.p", "wb"))
 	tgt_autoencoder_data = pickle.load(open("tgt_autoencoder_data.p", "rb"))
 	tgt_autoenc, tgt_enc, tgt_dec = tgt_autoencoder_data
+	'''
+	tgt_autoencoder_data = pickle.load(open("tgt_autoencoder_data.p", "rb"))
+	tgt_autoenc, tgt_enc, tgt_dec = tgt_autoencoder_data
+
+	src_autoenc = pickle.load(open("auto_encoder2.pkl", "rb"))
+	src_enc = pickle.load(open("encoder2.pkl", "rb"))
+	src_dec = pickle.load(open("decoder2.pkl", "rb"))
 
 	#testeroo
 	n = 10
@@ -80,6 +88,9 @@ def swap():
 	tgt_samples = target_array[0:10*n:10]
 	predicted1 = src_autoenc.predict(src_samples)
 	predicted2 = tgt_autoenc.predict(tgt_samples)
+
+	# print(predicted1[0])
+	# print(predicted2[0])
 
 	# test encoding into itself
 	encoded_step = src_enc.predict(src_samples)
@@ -96,9 +107,9 @@ def swap():
 	    cv2.imshow("predicted src", cv2.resize(predicted1[i].reshape(s, s, 3), (480, 480)))
 	    cv2.imshow("target samples", cv2.resize(tgt_samples[i].reshape(s, s, 3), (480, 480)))
 	    cv2.imshow("predicted tgt", cv2.resize(predicted2[i].reshape(s, s, 3), (480, 480)))
-	    cv2.imshow("test1", cv2.resize(test1[i].reshape(s, s, 3), (480, 480)))
-	    cv2.imshow("test2", cv2.resize(test2[i].reshape(s, s, 3), (480, 480)))
-	    cv2.imshow("test3", cv2.resize(test3[i].reshape(s, s, 3), (480, 480)))
+	    # cv2.imshow("test1", cv2.resize(test1[i].reshape(s, s, 3), (480, 480)))
+	    # cv2.imshow("test2", cv2.resize(test2[i].reshape(s, s, 3), (480, 480)))
+	    # cv2.imshow("test3", cv2.resize(test3[i].reshape(s, s, 3), (480, 480)))
 	    cv2.waitKey(0)
 
 swap()
