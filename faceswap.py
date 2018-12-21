@@ -1,115 +1,115 @@
 
 import cv2
 import numpy as np
+import face_recognition
 import pickle
 
-from face_detection import *
-#from autoencoders import *
-import pickle
+from morphing import *
+# import morph_tri_deniz as morph1
+# import morph_tri_john as morph2
 
-def swap():
 
-	source_filename = "videos/Easy/FrankUnderwood.mp4"
-	replacement_filename = "videos/Easy/MrRobot.mp4"
+# helper func
+def landmarks_to_array(landmarks):
 
-	# Open source video
-	source_video = cv2.VideoCapture(source_filename)
-	replacement_video = cv2.VideoCapture(replacement_filename)
+    coords = []
 
-	''' Face detection '''
+    for d in landmarks:
+        for key, value in d.items():
+            for coord in value:
+                temp = np.array(coord)
+                coords.append(temp)
 
-	# Detect faces in the source video
+    array = np.array(coords)
+    return array
 
-	print("Detecting faces from souce video...")
-	#source_faces = detect_all_faces(source_video)
-	#pickle.dump(source_faces, open("source_faces.p", "wb"))
-	source_faces = pickle.load(open("source_faces.p", "rb"))
-	num_src_face = len(source_faces)
-	print("Found {0} faces!".format(num_src_face))
 
-	# Detect faces in the replacement video
+# This part assumes we have the autoencoders trained
+def swap(source_filename, replacement_filename, output_filename, which_frame):
 
-	print("Detecting face to replace from replacement video...")
-	#replacement_faces = detect_all_faces(replacement_video)
-	#pickle.dump(replacement_faces, open("replacement_faces.p", "wb"))
-	replacement_faces = pickle.load(open("replacement_faces.p", "rb"))
-	num_tgt_face = len(replacement_faces)
-	print("Found {0} faces!".format(num_tgt_face))
+    # Open video to replace faces on, and output video
+    replacement_video = cv2.VideoCapture(replacement_filename)
+    w = int(replacement_video.get(3))
+    h = int(replacement_video.get(4))
+    fps = replacement_video.get(cv2.CAP_PROP_FPS)
+    output_video = cv2.VideoWriter(output_filename, cv2.VideoWriter_fourcc(*'MJPG'), fps, (w,h))
 
-	''' Autoencoders '''
+    # Sample a source face
+    source_video = cv2.VideoCapture(source_filename)
+    for x in range(which_frame):
+        source_video.read()
+    success, first_frame = source_video.read()
+    new_face_landmarks = face_recognition.face_landmarks(first_frame)
+    new_face_coords = landmarks_to_array(new_face_landmarks)
 
-	# Resize all the images to training size, and convert to floats
+    count = 0
+    while True:
+        print("\nIteration:", count)
+        # if (count == 24): break
 
-	s = 96
-	source_array = np.zeros((num_src_face, s, s, 3)).astype('float32')
-	for f in range(num_src_face):
-		curr_face = cv2.resize(source_faces[f], (s, s))
-		source_array[f,:,:,:] = curr_face.astype('float32') / 255.0
+        # Get the next frame
+        success, input_frame = replacement_video.read()
+        if not success:
+            print("Finished: frame", count)
+            break
 
-	with open("new_source.p", "wb") as f:
-    	 pickle.dump(source_array, f)
+        ''' Detect features, and morph output face '''
 
-	target_array = np.zeros((num_tgt_face, s, s, 3)).astype('float32')
-	for f in range(num_tgt_face):
-		curr_face = cv2.resize(replacement_faces[f], (s, s))
-		target_array[f,:,:,:] = curr_face.astype('float32') / 255.0
+        # Get facial landmarks
+        print("Getting landmarks...")
+        old_face_landmarks = face_recognition.face_landmarks(input_frame)
+        old_face_coords = landmarks_to_array(old_face_landmarks)
 
-	# Train autoencoders on the source and replacement faces
+        ''' Transform source face, to map it to the replacement frame '''
 
-	'''
-	part = np.random.permutation(np.arange(0, source_array.shape[0]))
+        # Pad the source face to make it the right shape
+        new_shape = (max(input_frame.shape[0], first_frame.shape[0]), max(input_frame.shape[1], first_frame.shape[1]), 3)
+        new_face = np.zeros(new_shape, dtype=first_frame.dtype)
+        new_face[0 : first_frame.shape[0], 0 : first_frame.shape[1], :] = first_frame
 
-	source_array = source_array[part]
-	src_train = source_array[0:180]
-	src_test = source_array[180:-1]
-	#src_autoencoder_data = new_autoencoder(src_train, src_test)
-	#pickle.dump(src_autoencoder_data, open("src_autoencoder_data.p", "wb"))
-	src_autoencoder_data = pickle.load(open("src_autoencoder_data.p", "rb"))
-	src_autoenc, src_enc, src_dec = src_autoencoder_data
+        # Do image morphing (call code from project 2A)
+        print("Warping face...")
+        warped_face = morph_face(new_face, input_frame, new_face_coords, old_face_coords)
+        #warped_face = morph1.morph_tri(new_face, input_frame, new_face_coords, old_face_coords, [1], [0])[0]
+        #warped_face2 = morph2.morph_tri(new_face, input_frame, new_face_coords, old_face_coords, np.array([1]), np.array([0]))[0]
 
-	target_array = target_array[part]
-	tgt_train = target_array[0:180]
-	tgt_test = target_array[180:-1]
-	#tgt_autoencoder_data = new_autoencoder(tgt_train, tgt_test)
-	#pickle.dump(tgt_autoencoder_data, open("tgt_autoencoder_data.p", "wb"))
-	tgt_autoencoder_data = pickle.load(open("tgt_autoencoder_data.p", "rb"))
-	tgt_autoenc, tgt_enc, tgt_dec = tgt_autoencoder_data
-	'''
-	tgt_autoencoder_data = pickle.load(open("tgt_autoencoder_data.p", "rb"))
-	tgt_autoenc, tgt_enc, tgt_dec = tgt_autoencoder_data
+        ''' Stitch face and blend to get output frame '''
 
-	src_autoenc = pickle.load(open("auto_encoder2.pkl", "rb"))
-	src_enc = pickle.load(open("encoder2.pkl", "rb"))
-	src_dec = pickle.load(open("decoder2.pkl", "rb"))
+        # Compute location of center by averaging and facial landmarks
+        max_y, max_x = np.max(old_face_coords[:,1]), np.max(old_face_coords[:,0])
+        min_y, min_x = np.min(old_face_coords[:,1]), np.min(old_face_coords[:,0])
+        center = (int((max_x + min_x)/2), int((max_y + min_y)/2))
+        # print("y:", min_y, "->", max_y)
+        # print("x:", min_x, "->", max_x)
 
-	#testeroo
-	n = 10
-	src_samples = source_array[0:10*n:10]
-	tgt_samples = target_array[0:10*n:10]
-	predicted1 = src_autoenc.predict(src_samples)
-	predicted2 = tgt_autoenc.predict(tgt_samples)
+        # Crop the warped face, create an all white mask
+        warped_face = warped_face[min_y : max_y, min_x : max_x, :]
+        mask = 255 * np.ones(warped_face.shape, warped_face.dtype)
+        mask[np.where(np.sum(warped_face, axis=2) == 0)] = np.array([0,0,0])
 
-	# print(predicted1[0])
-	# print(predicted2[0])
+        # Seamlessly clone src into dst and put the results in output
+        print("Cloning...")
+        output_frame = cv2.seamlessClone(
+            np.uint8(warped_face),
+            np.uint8(input_frame),
+            np.uint8(mask),
+            center, cv2.NORMAL_CLONE)
 
-	# test encoding into itself
-	encoded_step = src_enc.predict(src_samples)
-	test1 = src_dec.predict(encoded_step)
+        # Save frame
+        print("Writing output frame...")
+        output_video.write(output_frame)
+        count = count + 1
 
-	# test src->encoder->tgt
-	test2 = tgt_dec.predict(src_enc.predict(src_samples))
-	# and the other way
-	test3 = src_dec.predict(tgt_enc.predict(tgt_samples))
+    print("Done!")
+    source_video.release()
+    replacement_video.release()
+    output_video.release()
 
-	# Display the results
-	for i in range(n):
-	    cv2.imshow("source samples", cv2.resize(src_samples[i].reshape(s, s, 3), (480, 480)))
-	    cv2.imshow("predicted src", cv2.resize(predicted1[i].reshape(s, s, 3), (480, 480)))
-	    cv2.imshow("target samples", cv2.resize(tgt_samples[i].reshape(s, s, 3), (480, 480)))
-	    cv2.imshow("predicted tgt", cv2.resize(predicted2[i].reshape(s, s, 3), (480, 480)))
-	    # cv2.imshow("test1", cv2.resize(test1[i].reshape(s, s, 3), (480, 480)))
-	    # cv2.imshow("test2", cv2.resize(test2[i].reshape(s, s, 3), (480, 480)))
-	    # cv2.imshow("test3", cv2.resize(test3[i].reshape(s, s, 3), (480, 480)))
-	    cv2.waitKey(0)
 
-swap()
+
+# source_filename = "videos/Easy/MrRobot.mp4"
+# replacement_filename = "videos/Easy/FrankUnderwood.mp4"
+# output_filename = "out.avi"
+# which_frame = 60
+
+# swap(source_filename, replacement_filename, output_filename, which_frame)
